@@ -1,1 +1,312 @@
+# Restaurant Booking API
 
+A comprehensive restaurant table booking system built with Node.js, Express.js, and Azure Cosmos DB. Features OTP-based user authentication, admin password authentication, table management, time slot management, and booking functionality.
+
+## Features
+
+- **User Authentication**: OTP-based login/signup for users
+- **Admin Authentication**: Password-based login for administrators
+- **Table Management**: Create and manage restaurant tables with capacity and location
+- **Time Slot Management**: Generate and manage 30-minute booking slots
+- **Booking System**: Users can book tables for specific time slots
+- **Real-time Availability**: Check available tables for specific slots
+- **Admin Dashboard**: View all bookings, users, and manage resources
+- **API Documentation**: Interactive Swagger UI documentation
+
+## Tech Stack
+
+- **Backend**: Node.js, Express.js
+- **Database**: Azure Cosmos DB
+- **Authentication**: JWT tokens, bcryptjs for password hashing, speakeasy for OTP
+- **Documentation**: Swagger/OpenAPI 3.0
+- **Date/Time**: Moment.js for time slot management
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- Azure Cosmos DB account
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd restaurant-be
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+Create a `.env` file in the root directory:
+```env
+COSMOS_ENDPOINT=your_cosmos_db_endpoint
+COSMOS_KEY=your_cosmos_db_key
+JWT_SECRET=your_jwt_secret_key
+```
+
+4. Initialize the database:
+```bash
+npm run init-db
+```
+
+5. Start the server:
+```bash
+npm start
+```
+
+The API will be available at `http://localhost:3000`
+
+## API Documentation
+
+### Swagger UI
+
+Access the interactive API documentation at:
+```
+http://localhost:3000/api-docs
+```
+
+The Swagger UI provides:
+- Complete endpoint documentation
+- Request/response schemas
+- Authentication examples
+- Try-it-out functionality for testing endpoints
+
+## API Endpoints
+
+### Authentication
+
+#### User Authentication
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/send-otp` - Send OTP to phone
+- `POST /api/auth/verify-otp` - Verify OTP and login
+- `GET /api/auth/profile` - Get current user profile
+
+#### Admin Authentication
+- `POST /api/auth/admin-login` - Admin login with email/password
+
+### Admin Operations
+
+#### Table Management
+- `POST /api/admin/tables` - Create new table
+- `GET /api/admin/tables` - Get all tables
+- `PUT /api/admin/tables/{id}` - Update table details
+
+#### Time Slot Management
+- `POST /api/admin/slots/generate` - Generate time slots for a date
+- `PUT /api/admin/slots/{id}` - Enable/disable time slot
+
+#### Admin Views
+- `GET /api/admin/bookings` - View all bookings
+- `GET /api/admin/users` - View all users
+
+### User Operations
+
+#### Time Slots
+- `GET /api/slots?date=YYYY-MM-DD` - Get available time slots for a date
+
+#### Tables
+- `GET /api/tables/available?date=YYYY-MM-DD&slotId=slot_id` - Get available tables for a slot
+
+#### Bookings
+- `POST /api/bookings` - Create a new booking
+- `GET /api/bookings` - Get user's bookings
+- `DELETE /api/bookings/{id}` - Cancel a booking
+
+## Database Schema
+
+### Containers
+
+1. **users** - User accounts (customers and admins)
+2. **tables** - Restaurant tables with capacity and location
+3. **time_slots** - Available booking time slots (30-minute intervals)
+4. **bookings** - Table reservations
+
+### Entity Structure
+
+All entities include `createdAt` and `updatedAt` timestamps.
+
+#### User
+```json
+{
+  "id": "string",
+  "email": "string",
+  "name": "string",
+  "phone": "string",
+  "role": "user|admin",
+  "isVerified": "boolean",
+  "createdAt": "datetime",
+  "updatedAt": "datetime"
+}
+```
+
+#### Table
+```json
+{
+  "id": "string",
+  "tableNumber": "integer",
+  "capacity": "integer",
+  "location": "string",
+  "isActive": "boolean",
+  "createdAt": "datetime",
+  "updatedAt": "datetime"
+}
+```
+
+#### Time Slot
+```json
+{
+  "id": "string",
+  "date": "date",
+  "startTime": "string",
+  "endTime": "string",
+  "isActive": "boolean",
+  "createdAt": "datetime",
+  "updatedAt": "datetime"
+}
+```
+
+#### Booking
+```json
+{
+  "id": "string",
+  "userId": "string",
+  "tableId": "string",
+  "slotId": "string",
+  "date": "date",
+  "numberOfGuests": "integer",
+  "status": "confirmed|cancelled",
+  "createdAt": "datetime",
+  "updatedAt": "datetime"
+}
+```
+
+## Authentication Flow
+
+### User Flow
+1. User signs up with email, name, and phone
+2. User requests OTP via `/api/auth/send-otp`
+3. User verifies OTP via `/api/auth/verify-otp` to receive JWT token
+4. User can now access protected endpoints with Bearer token
+
+### Admin Flow
+1. Admin logs in with email and password via `/api/auth/admin-login`
+2. Receives JWT token for admin operations
+3. Can access admin-only endpoints
+
+## Usage Examples
+
+### User Registration and Login
+```bash
+# 1. Sign up
+curl -X POST http://localhost:3000/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "name": "John Doe",
+    "phone": "+1234567890"
+  }'
+
+# 2. Send OTP
+curl -X POST http://localhost:3000/api/auth/send-otp \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+1234567890"}'
+
+# 3. Verify OTP and login
+curl -X POST http://localhost:3000/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+1234567890", "otp": "123456"}'
+```
+
+### Admin Login
+```bash
+curl -X POST http://localhost:3000/api/auth/admin-login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "password": "adminpassword"
+  }'
+```
+
+### Create Table (Admin)
+```bash
+curl -X POST http://localhost:3000/api/admin/tables \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tableNumber": 1,
+    "capacity": 4,
+    "location": "Window side"
+  }'
+```
+
+### Generate Time Slots (Admin)
+```bash
+curl -X POST http://localhost:3000/api/admin/slots/generate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "date": "2024-01-15",
+    "startTime": "18:00",
+    "endTime": "22:00"
+  }'
+```
+
+### Make a Booking (User)
+```bash
+curl -X POST http://localhost:3000/api/bookings \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tableId": "table_id",
+    "slotId": "slot_id",
+    "date": "2024-01-15",
+    "numberOfGuests": 2
+  }'
+```
+
+## Development
+
+### Project Structure
+```
+restaurant-be/
+├── index.js              # Main server file
+├── swagger-def.js        # Swagger API definitions
+├── init-db.js           # Database initialization
+├── routes/
+│   ├── auth.js          # Authentication routes
+│   ├── admin.js         # Admin management routes
+│   └── user.js          # User booking routes
+├── package.json
+├── readme               # This file
+└── .env                 # Environment variables
+```
+
+### Scripts
+- `npm start` - Start the server
+- `npm run init-db` - Initialize database and create admin user
+
+## Security
+
+- JWT tokens for authentication
+- Password hashing with bcryptjs
+- OTP generation for user verification
+- Role-based access control (user/admin)
+- CORS enabled for cross-origin requests
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+ISC License
